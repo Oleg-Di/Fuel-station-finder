@@ -173,8 +173,14 @@ const displayedStations = stations.filter((station) => {
       {/* КНОПКА «ГДЕ Я» ПОВЕРХ КАРТЫ */}
       <button
   onClick={handleFindMe}
- 
-  className="absolute bottom-[400px] md:bottom-6 right-4 md:right-6 z-[1000] bg-white text-gray-700 hover:text-indigo-600 p-3 rounded-full shadow-xl border border-gray-200 transition-all hover:scale-105 active:scale-95 flex items-center justify-center bg-opacity-95 backdrop-blur-sm group"
+  /*
+    БЫЛО:  absolute bottom-[400px] md:bottom-6
+    СТАЛО: absolute top-4 md:top-auto md:bottom-6
+    Мы переместили кнопку в правый верхний угол карты на мобильных устройствах,
+    чтобы она гарантированно была видна над нижней шторкой. На ПК она
+    остается внизу, как и раньше.
+  */
+  className="absolute top-4 right-4 md:top-auto md:bottom-6 md:right-6 z-[1000] bg-white text-gray-700 hover:text-indigo-600 p-3 rounded-full shadow-xl border border-gray-200 transition-all hover:scale-105 active:scale-95 flex items-center justify-center bg-opacity-95 backdrop-blur-sm group"
   title="Центрировать на мне"
 >
   <svg 
