@@ -44,24 +44,22 @@ function MapEventsTracker({ center }: { center: [number, number] }) {
     const { setMapBounds, selectedStation } = useMapStore();
     
     // Ref для хранения таймера дебаунса
-    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
     // Безопасная функция обновления границ с задержкой
     const updateBoundsWithDebounce = () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-  
-      // Ждем 100 миллисекунд после финальной остановки карты, прежде чем дергать Zustand
-      debounceTimerRef.current = setTimeout(() => {
-        const currentBounds = map.getBounds();
-        const stateBounds = useMapStore.getState().mapBounds;
-  
-        // Дополнительная проверка: если границы не изменились (или это тот же объект), не обновляем стейт
-        if (!stateBounds || !stateBounds.equals(currentBounds)) {
-          setMapBounds(currentBounds);
-        }
-      }, 100);
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+          }
+        
+          debounceTimerRef.current = setTimeout(() => {
+            const currentBounds = map.getBounds();
+            const stateBounds = useMapStore.getState().mapBounds;
+        
+            if (!stateBounds || !stateBounds.equals(currentBounds)) {
+              setMapBounds(currentBounds);
+            }
+          }, 100);
     };
   
     useEffect(() => {
@@ -70,7 +68,7 @@ function MapEventsTracker({ center }: { center: [number, number] }) {
       
       // Очищаем таймер при размонтировании компонента
       return () => {
-        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current ? clearTimeout(debounceTimerRef.current) : null;
       };
     }, [map, setMapBounds]);
   
