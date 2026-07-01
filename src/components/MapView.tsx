@@ -172,22 +172,23 @@ const displayedStations = stations.filter((station) => {
       
       {/* КНОПКА «ГДЕ Я» ПОВЕРХ КАРТЫ */}
       <button
-        onClick={handleFindMe}
-        className="absolute bottom-6 right-6 z-[1000] bg-white text-gray-700 hover:text-indigo-600 p-3 rounded-full shadow-xl border border-gray-200 transition-all hover:scale-105 active:scale-95 flex items-center justify-center bg-opacity-95 backdrop-blur-sm group"
-        title="Центрировать на мне"
-      >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          fill="none" 
-          viewBox="0 0 24 24" 
-          strokeWidth={2} 
-          stroke="currentColor" 
-          className="w-6 h-6 transition-transform group-hover:rotate-45"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-        </svg>
-      </button>
+  onClick={handleFindMe}
+ 
+  className="absolute bottom-[400px] md:bottom-6 right-4 md:right-6 z-[1000] bg-white text-gray-700 hover:text-indigo-600 p-3 rounded-full shadow-xl border border-gray-200 transition-all hover:scale-105 active:scale-95 flex items-center justify-center bg-opacity-95 backdrop-blur-sm group"
+  title="Центрировать на мне"
+>
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    fill="none" 
+    viewBox="0 0 24 24" 
+    strokeWidth={2} 
+    stroke="currentColor" 
+    className="w-6 h-6 transition-transform group-hover:rotate-45"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+  </svg>
+</button>
 
       <MapContainer center={mapCenter} zoom={zoom} className="w-full h-full z-0">
         <TileLayer

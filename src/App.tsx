@@ -26,8 +26,9 @@ function App() {
 
       <div className="w-full flex-1 flex overflow-hidden">
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-      <Sidebar />
+      
       <MapView />
+      <Sidebar />
     </div>
       </div>
     </div>
