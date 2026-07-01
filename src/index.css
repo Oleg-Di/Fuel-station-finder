@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* Подключаем стили для карты Leaflet */
+@import "leaflet/dist/leaflet.css";
+
+/* Задаем высоту для контейнера карты, чтобы она занимала весь экран */
+#map {
+  height: 100%;
+}
