@@ -1,26 +1,37 @@
+import { useEffect } from 'react';
 import { MapView } from './components/MapView';
+import { Sidebar } from './components/Sidebar';
+import { useMapStore } from './store/useMapStore';
 
-export default function App() {
+function App() {
+  const loadRealStations = useMapStore((state) => state.loadRealStations);
+  const isLoading = useMapStore((state) => state.isLoading);
+
+  useEffect(() => {
+    loadRealStations();
+  }, [loadRealStations]);
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans antialiased">
-      {/* Шапка приложения */}
-      <header className="h-16 bg-white border-b border-gray-100 px-6 flex items-center justify-between shadow-xs z-10">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">⚡</span>
-          <div>
-            <h1 className="text-lg font-black text-gray-950 tracking-tight">EcoStation Finder</h1>
-            <p className="text-xs text-gray-500 font-medium -mt-1">Цены на топливо и электрозарядки</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4 text-sm font-bold text-gray-600">
-          <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs">Карта готова</span>
-        </div>
+    <div className="w-full h-screen flex flex-col bg-gray-50">
+      <header className="w-full h-14 bg-indigo-600 flex items-center justify-between px-6 shadow-md z-20">
+        <h1 className="text-white font-black text-xl tracking-wide flex items-center gap-2">
+          Base Carburantes API 🇪🇸
+        </h1>
+        {isLoading && (
+          <span className="text-xs bg-indigo-700 text-indigo-200 px-3 py-1 rounded-full animate-pulse font-medium">
+            Синхронизация цен...
+          </span>
+        )}
       </header>
 
-      {/* Контейнер с картой */}
-      <main className="flex-1">
-        <MapView />
-      </main>
+      <div className="w-full flex-1 flex overflow-hidden">
+        <Sidebar />
+        <div className="flex-1 h-full">
+          <MapView />
+        </div>
+      </div>
     </div>
   );
 }
+
+export default App;
