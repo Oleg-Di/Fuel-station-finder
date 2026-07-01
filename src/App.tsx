@@ -25,10 +25,10 @@ function App() {
       </header>
 
       <div className="w-full flex-1 flex overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 h-full">
-          <MapView />
-        </div>
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+      <Sidebar />
+      <MapView />
+    </div>
       </div>
     </div>
   );
