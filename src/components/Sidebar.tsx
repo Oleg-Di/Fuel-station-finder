@@ -1,5 +1,5 @@
 import { useMapStore } from '../store/useMapStore';
-import { Station } from '../types/station';
+import type { Station } from '../types/station';
 import * as L from 'leaflet';
 
 export function Sidebar() {
@@ -17,29 +17,48 @@ export function Sidebar() {
 
   // Умная фильтрация: тип + границы экрана + цена
   const filteredStations = stations.filter((station) => {
+    // 1. Фильтр по типу
     const matchesType = filterType === 'all' ? true : station.type === filterType;
     
+    // 2. Фильтр по границам карты
     const matchesBounds = mapBounds 
       ? mapBounds.contains(L.latLng(station.coordinates[0], station.coordinates[1]))
       : true;
-
-    // Фильтр по цене: ищем минимальную доступную цену на станции (будь то 95, дизель или газ)
-    // Если это электрозарядка, фильтр цены пропускает её автоматически
+  
+    // 3. Улучшенный фильтр по цене (игнорируем нули и смотрим на выбранный таб)
     let matchesPrice = true;
     if (station.type !== 'ev' && station.fuelPrices) {
-      const prices = [
-        station.fuelPrices.sp95,
-        station.fuelPrices.diesel,
-        station.fuelPrices.glp,
-        station.fuelPrices.gnc
-      ].filter((p): p is number => !!p && p > 0);
-
-      if (prices.length > 0) {
-        const minStationPrice = Math.min(...prices);
-        matchesPrice = minStationPrice <= maxPrice;
+      // Собираем только реальные цены, которые строго больше нуля
+      const validPrices: number[] = [];
+      
+      // Если выбран конкретный таб 'fuel', смотрим только бензин и дизель
+      if (filterType === 'fuel') {
+        if (station.fuelPrices.sp95 > 0) validPrices.push(station.fuelPrices.sp95);
+        if (station.fuelPrices.diesel > 0) validPrices.push(station.fuelPrices.diesel);
+      } 
+      // Если выбран таб 'gas', смотрим только автогаз
+      else if (filterType === 'gas') {
+        if (station.fuelPrices.glp && station.fuelPrices.glp > 0) validPrices.push(station.fuelPrices.glp);
+        if (station.fuelPrices.gnc && station.fuelPrices.gnc > 0) validPrices.push(station.fuelPrices.gnc);
+      } 
+      // Если выбраны 'all' (Все), берем вообще любую минимальную цену на этой заправке
+      else {
+        if (station.fuelPrices.sp95 > 0) validPrices.push(station.fuelPrices.sp95);
+        if (station.fuelPrices.diesel > 0) validPrices.push(station.fuelPrices.diesel);
+        if (station.fuelPrices.glp && station.fuelPrices.glp > 0) validPrices.push(station.fuelPrices.glp);
+        if (station.fuelPrices.gnc && station.fuelPrices.gnc > 0) validPrices.push(station.fuelPrices.gnc);
+      }
+  
+      // Если нашли хоть одну валидную цену, проверяем, укладывается ли она в лимит
+      if (validPrices.length > 0) {
+        const minPriceOnStation = Math.min(...validPrices);
+        matchesPrice = minPriceOnStation <= maxPrice;
+      } else {
+        // Если у заправки вообще нет цен (все по нулям), скрываем её от греха подальше
+        matchesPrice = false; 
       }
     }
-
+  
     return matchesType && matchesBounds && matchesPrice;
   });
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Station, StationType } from '../types/station';
+import type { Station, StationType } from '../types/station';
 import { mockStations } from '../data/mockStations';
 import { fetchSpanishGasStations } from '../services/api';
 import * as L from 'leaflet';

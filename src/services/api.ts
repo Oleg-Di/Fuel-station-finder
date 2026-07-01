@@ -1,4 +1,4 @@
-import { Station, StationType } from '../types/station';
+import type { Station, StationType } from '../types/station';
 
 const BASE_URL = 'https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes';
 

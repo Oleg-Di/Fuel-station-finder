@@ -8,7 +8,7 @@
     "jsx": "react-jsx",
 
     /* Bundler mode */
-    "module": "bundler",
+    "module": "ESNext",
     "allowImportingTsExtensions": true,
     //"verbatimModuleSyntax": true,
     "moduleDetection": "force",

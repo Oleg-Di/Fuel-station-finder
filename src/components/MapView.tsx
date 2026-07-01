@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { useMapStore } from '../store/useMapStore';
 import * as L from 'leaflet';
@@ -40,38 +40,66 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 function MapEventsTracker({ center }: { center: [number, number] }) {
-  const map = useMap();
-  const { setMapBounds, selectedStation } = useMapStore();
+    const map = useMap();
+    const { setMapBounds, selectedStation } = useMapStore();
+    
+    // Ref для хранения таймера дебаунса
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   
-  useEffect(() => {
-    setMapBounds(map.getBounds());
-  }, [map, setMapBounds]);
-
-  useEffect(() => {
-    if (center) {
-      map.flyTo(center, 14, { animate: true, duration: 1.5 });
-    }
-  }, [center, map]);
-
-  useEffect(() => {
-    if (!selectedStation) return;
-    map.eachLayer((layer: any) => {
-      if (layer instanceof L.Marker) {
-        const latLng = layer.getLatLng();
-        if (latLng.lat === selectedStation.coordinates[0] && latLng.lng === selectedStation.coordinates[1]) {
-          layer.openPopup();
-        }
+    // Безопасная функция обновления границ с задержкой
+    const updateBoundsWithDebounce = () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
-    });
-  }, [selectedStation, map]);
-
-  useMapEvents({
-    moveend: () => setMapBounds(map.getBounds()),
-    zoomend: () => setMapBounds(map.getBounds())
-  });
   
-  return null;
-}
+      // Ждем 100 миллисекунд после финальной остановки карты, прежде чем дергать Zustand
+      debounceTimerRef.current = setTimeout(() => {
+        const currentBounds = map.getBounds();
+        const stateBounds = useMapStore.getState().mapBounds;
+  
+        // Дополнительная проверка: если границы не изменились (или это тот же объект), не обновляем стейт
+        if (!stateBounds || !stateBounds.equals(currentBounds)) {
+          setMapBounds(currentBounds);
+        }
+      }, 100);
+    };
+  
+    useEffect(() => {
+      // Пишем стартовые границы один раз при загрузке
+      setMapBounds(map.getBounds());
+      
+      // Очищаем таймер при размонтировании компонента
+      return () => {
+        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      };
+    }, [map, setMapBounds]);
+  
+    useEffect(() => {
+      if (center) {
+        map.flyTo(center, 14, { animate: true, duration: 1.5 });
+      }
+    }, [center, map]);
+  
+    useEffect(() => {
+      if (!selectedStation) return;
+      map.eachLayer((layer: any) => {
+        if (layer instanceof L.Marker) {
+          const latLng = layer.getLatLng();
+          if (latLng.lat === selectedStation.coordinates[0] && latLng.lng === selectedStation.coordinates[1]) {
+            layer.openPopup();
+          }
+        }
+      });
+    }, [selectedStation, map]);
+  
+    // Слушаем события карты, используя нашу безопасную функцию
+    useMapEvents({
+      moveend: updateBoundsWithDebounce,
+      zoomend: updateBoundsWithDebounce
+    });
+    
+    return null;
+  }
   
 export function MapView() {
   const { 
@@ -95,38 +123,49 @@ export function MapView() {
     }
     
     (globalThis as any).navigator.geolocation.getCurrentPosition(
-      (position) => {
+      (position: GeolocationPosition) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         
         setUserLocation([lat, lng]);
         setMapCenter([lat, lng]); 
       },
-      (error) => {
+      (error: GeolocationPositionError) => {
         alert(`Не удалось определить положение: ${error.message}`);
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 
-  const displayedStations = stations.filter((station) => {
+// Фильтруем маркеры на карте по типу, экрану и стоимости
+const displayedStations = stations.filter((station) => {
     const matchesType = filterType === 'all' ? true : station.type === filterType;
     const matchesBounds = mapBounds ? mapBounds.contains(L.latLng(station.coordinates[0], station.coordinates[1])) : true; 
-
+  
     let matchesPrice = true;
     if (station.type !== 'ev' && station.fuelPrices) {
-      const prices = [
-        station.fuelPrices.sp95,
-        station.fuelPrices.diesel,
-        station.fuelPrices.glp,
-        station.fuelPrices.gnc
-      ].filter((p): p is number => !!p && p > 0);
-
-      if (prices.length > 0) {
-        matchesPrice = Math.min(...prices) <= maxPrice;
+      const validPrices: number[] = [];
+      
+      if (filterType === 'fuel') {
+        if (station.fuelPrices.sp95 > 0) validPrices.push(station.fuelPrices.sp95);
+        if (station.fuelPrices.diesel > 0) validPrices.push(station.fuelPrices.diesel);
+      } else if (filterType === 'gas') {
+        if (station.fuelPrices.glp && station.fuelPrices.glp > 0) validPrices.push(station.fuelPrices.glp);
+        if (station.fuelPrices.gnc && station.fuelPrices.gnc > 0) validPrices.push(station.fuelPrices.gnc);
+      } else {
+        if (station.fuelPrices.sp95 > 0) validPrices.push(station.fuelPrices.sp95);
+        if (station.fuelPrices.diesel > 0) validPrices.push(station.fuelPrices.diesel);
+        if (station.fuelPrices.glp && station.fuelPrices.glp > 0) validPrices.push(station.fuelPrices.glp);
+        if (station.fuelPrices.gnc && station.fuelPrices.gnc > 0) validPrices.push(station.fuelPrices.gnc);
+      }
+  
+      if (validPrices.length > 0) {
+        matchesPrice = Math.min(...validPrices) <= maxPrice;
+      } else {
+        matchesPrice = false;
       }
     }
-
+  
     return matchesType && matchesBounds && matchesPrice;
   });
 
@@ -172,20 +211,21 @@ export function MapView() {
             position={station.coordinates}
             icon={station.type === 'ev' ? evIcon : station.type === 'fuel' ? fuelIcon : gasIcon}
             eventHandlers={{
-              mouseover: (e) => {
-                e.target.openPopup();
-                setSelectedStation(station);
-              },
-              mouseout: (e) => {
-                const isCurrentSelected = useMapStore.getState().selectedStation?.id === station.id;
-                if (!isCurrentSelected) {
-                  e.target.closePopup();
+                // Типизируем e как L.LeafletMouseEvent
+                mouseover: (e: L.LeafletMouseEvent) => {
+                  e.target.openPopup();
+                  setSelectedStation(station);
+                },
+                // И здесь тоже типизируем e
+                mouseout: (e: L.LeafletMouseEvent) => {
+                  const isCurrentSelected = useMapStore.getState().selectedStation?.id === station.id;
+                  // Используем тернарный оператор для лаконичности
+                  isCurrentSelected ? null : e.target.closePopup();
+                },
+                click: () => {
+                  setSelectedStation(station);
                 }
-              },
-              click: () => {
-                setSelectedStation(station);
-              }
-            }}
+              }}
           >
             <Popup closeButton={false}>
               <div className="p-1 font-sans min-w-[180px]">
